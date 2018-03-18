@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2012-2017 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2018 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -58,6 +58,10 @@
 #include <pthread.h>
 #include <systemlib/mavlink_log.h>
 #include <drivers/device/ringbuffer.h>
+
+#ifdef __PX4_POSIX
+#include <net/if.h>
+#endif
 
 #include <uORB/uORB.h>
 #include <uORB/topics/mission.h>
@@ -134,14 +138,6 @@ public:
 
 	static int		get_status_all_instances();
 
-	/**
-	 * Set all instances to verbose mode
-	 *
-	 * This is primarily intended for analysis and
-	 * not intended for normal operation
-	 */
-	static int		set_verbose_all_instances(bool enabled);
-
 	static bool		instance_exists(const char *device_name, Mavlink *self);
 
 	static void		forward_message(const mavlink_message_t *msg, Mavlink *self);
@@ -173,12 +169,19 @@ public:
 		MAVLINK_MODE_OSD,
 		MAVLINK_MODE_MAGIC,
 		MAVLINK_MODE_CONFIG,
-		MAVLINK_MODE_IRIDIUM
+		MAVLINK_MODE_IRIDIUM,
+		MAVLINK_MODE_MINIMAL
 	};
 
 	enum BROADCAST_MODE {
 		BROADCAST_MODE_OFF = 0,
 		BROADCAST_MODE_ON
+	};
+
+	enum FLOW_CONTROL_MODE {
+		FLOW_CONTROL_OFF = 0,
+		FLOW_CONTROL_AUTO,
+		FLOW_CONTROL_ON
 	};
 
 	static const char *mavlink_mode_str(enum MAVLINK_MODE mode)
@@ -205,12 +208,14 @@ public:
 		case MAVLINK_MODE_IRIDIUM:
 			return "Iridium";
 
+		case MAVLINK_MODE_MINIMAL:
+			return "Minimal";
+
 		default:
 			return "Unknown";
 		}
 	}
 
-	void			set_mode(enum MAVLINK_MODE);
 	enum MAVLINK_MODE	get_mode() { return _mode; }
 
 	bool			get_hil_enabled() { return _hil_enabled; }
@@ -219,7 +224,7 @@ public:
 
 	bool			get_forward_externalsp() { return _forward_externalsp; }
 
-	bool			get_flow_control_enabled() { return _flow_control_enabled; }
+	bool			get_flow_control_enabled() { return _flow_control_mode; }
 
 	bool			get_forwarding_on() { return _forwarding_on; }
 
@@ -274,13 +279,6 @@ public:
 	void 			set_protocol(Protocol p) { _protocol = p; }
 
 	/**
-	 * Set verbose mode
-	 */
-	void			set_verbose(bool v);
-
-	bool			get_verbose() const { return _verbose; }
-
-	/**
 	 * Get the manual input generation mode
 	 *
 	 * @return true if manual inputs should generate RC data
@@ -324,7 +322,7 @@ public:
 	 *
 	 * @param enabled	True if hardware flow control should be enabled
 	 */
-	int			enable_flow_control(bool enabled);
+	int			enable_flow_control(enum FLOW_CONTROL_MODE enabled);
 #endif
 
 	mavlink_channel_t	get_channel();
@@ -432,6 +430,10 @@ public:
 
 	int 			get_socket_fd() { return _socket_fd; };
 #ifdef __PX4_POSIX
+	const in_addr query_netmask_addr(const int socket_fd, const ifreq &ifreq);
+
+	const in_addr compute_broadcast_addr(const in_addr &host_addr, const in_addr &netmask_addr);
+
 	struct sockaddr_in 	*get_client_source_address() { return &_src_addr; }
 
 	void			set_client_source_initialized() { _src_addr_initialized = true; }
@@ -448,8 +450,6 @@ public:
 	bool			is_usb_uart() { return _is_usb_uart; }
 
 	bool			accepting_commands() { return true; /* non-trivial side effects ((!_config_link_on) || (_mode == MAVLINK_MODE_CONFIG));*/ }
-
-	bool			verbose() { return _verbose; }
 
 	int			get_data_rate()		{ return _datarate; }
 	void			set_data_rate(int rate) { if (rate > 0) { _datarate = rate; } }
@@ -524,7 +524,6 @@ private:
 
 	pthread_t		_receive_thread;
 
-	bool			_verbose;
 	bool			_forwarding_on;
 	bool			_ftp_on;
 #ifndef __PX4_QURT
@@ -549,7 +548,7 @@ private:
 	float			_subscribe_to_stream_rate;
 	bool 			_udp_initialised;
 
-	bool			_flow_control_enabled;
+	enum FLOW_CONTROL_MODE	_flow_control_mode;
 	uint64_t		_last_write_success_time;
 	uint64_t		_last_write_try_time;
 	uint64_t		_mavlink_start_time;
@@ -615,7 +614,7 @@ private:
 	void			mavlink_update_system();
 
 #ifndef __PX4_QURT
-	int			mavlink_open_uart(int baudrate, const char *uart_name);
+	int			mavlink_open_uart(int baudrate, const char *uart_name, bool force_flow_control);
 #endif
 
 	static int		interval_from_rate(float rate);

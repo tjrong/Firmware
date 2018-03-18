@@ -50,13 +50,9 @@ using math::min;
 
 static constexpr float DELAY_SIGMA = 0.01f;
 
-RTL::RTL(Navigator *navigator, const char *name) :
-	MissionBlock(navigator, name),
-	_param_return_alt(this, "RTL_RETURN_ALT", false),
-	_param_descend_alt(this, "RTL_DESCEND_ALT", false),
-	_param_land_delay(this, "RTL_LAND_DELAY", false),
-	_param_rtl_min_dist(this, "RTL_MIN_DIST", false),
-	_param_rtl_land_type(this, "RTL_LAND_TYPE", false)
+RTL::RTL(Navigator *navigator) :
+	MissionBlock(navigator),
+	ModuleParams(navigator)
 {
 }
 
@@ -167,7 +163,7 @@ RTL::set_rtl_item()
 			_mission_item.origin = ORIGIN_ONBOARD;
 
 			mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "RTL: climb to %d m (%d m above home)",
-						     (int)(climb_alt), (int)(climb_alt - _navigator->get_home_position()->alt));
+						     (int)ceilf(climb_alt), (int)ceilf(climb_alt - _navigator->get_home_position()->alt));
 			break;
 		}
 
@@ -198,7 +194,7 @@ RTL::set_rtl_item()
 			_mission_item.origin = ORIGIN_ONBOARD;
 
 			mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "RTL: return at %d m (%d m above home)",
-						     (int)(_mission_item.altitude), (int)(_mission_item.altitude - home.alt));
+						     (int)ceilf(_mission_item.altitude), (int)ceilf(_mission_item.altitude - home.alt));
 
 			break;
 		}
@@ -235,7 +231,7 @@ RTL::set_rtl_item()
 			pos_sp_triplet->previous.valid = false;
 
 			mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "RTL: descend to %d m (%d m above home)",
-						     (int)(_mission_item.altitude), (int)(_mission_item.altitude - home.alt));
+						     (int)ceilf(_mission_item.altitude), (int)ceilf(_mission_item.altitude - home.alt));
 			break;
 		}
 

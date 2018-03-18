@@ -38,12 +38,13 @@
  * @author Julian Oes <julian@oes.ch>
  */
 
-#ifndef NAVIGATOR_MISSION_BLOCK_H
-#define NAVIGATOR_MISSION_BLOCK_H
+#pragma once
 
 #include "navigator_mode.h"
+#include "navigation.h"
 
-#include <navigator/navigation.h>
+#include <drivers/drv_hrt.h>
+#include <systemlib/mavlink_log.h>
 #include <uORB/topics/mission.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_command.h>
@@ -58,8 +59,8 @@ public:
 	/**
 	 * Constructor
 	 */
-	MissionBlock(Navigator *navigator, const char *name);
-	~MissionBlock() = default;
+	MissionBlock(Navigator *navigator);
+	virtual ~MissionBlock() = default;
 
 	MissionBlock(const MissionBlock &) = delete;
 	MissionBlock &operator=(const MissionBlock &) = delete;
@@ -85,11 +86,6 @@ protected:
 	 * @param the position setpoint that needs to be set
 	 */
 	bool mission_item_to_position_setpoint(const mission_item_s &item, position_setpoint_s *sp);
-
-	/**
-	 * Set previous position setpoint to current setpoint
-	 */
-	void set_previous_pos_setpoint();
 
 	/**
 	 * Set a loiter mission item, if possible reuse the position setpoint, otherwise take the current position
@@ -130,13 +126,4 @@ protected:
 	hrt_abstime _time_wp_reached{0};
 
 	orb_advert_t    _actuator_pub{nullptr};
-
-	control::BlockParamFloat _param_yaw_timeout;
-	control::BlockParamFloat _param_yaw_err;
-
-	// VTOL parameters
-	control::BlockParamFloat _param_back_trans_dec_mss;
-	control::BlockParamFloat _param_reverse_delay;
 };
-
-#endif

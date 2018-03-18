@@ -18,6 +18,7 @@ set(config_module_list
 	# Board support modules
 	#
 	drivers/device
+	drivers/distance_sensor
 	modules/sensors
 	platforms/posix/drivers/df_mpu9250_wrapper
 	platforms/posix/drivers/df_ms5611_wrapper
@@ -40,6 +41,7 @@ set(config_module_list
 	modules/attitude_estimator_q
 	modules/position_estimator_inav
 	modules/local_position_estimator
+	modules/landing_target_estimator
 	modules/ekf2
 
 	#
@@ -73,7 +75,6 @@ set(config_module_list
 	drivers/linux_sbus
 	drivers/linux_pwm_out
 	drivers/rgbled
-	drivers/ulanding
 
 	#
 	# Libraries
@@ -84,23 +85,12 @@ set(config_module_list
 	lib/ecl
 	lib/geo
 	lib/geo_lookup
-	lib/launchdetection
 	lib/led
 	lib/mathlib
-	lib/mathlib/math/filter
 	lib/mixer
 	lib/rc
-	lib/runway_takeoff
-	lib/tailsitter_recovery
 	lib/terrain_estimation
 	lib/version
-
-	#
-	# POSIX
-	#
-	platforms/common
-	platforms/posix/px4_layer
-	platforms/posix/work_queue
 	
 	examples/px4_simple_app
 )

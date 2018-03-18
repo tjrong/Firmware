@@ -253,6 +253,14 @@ __EXPORT int		param_get(param_t param, void *val);
 __EXPORT int		param_set(param_t param, const void *val);
 
 /**
+ * Mark a parameter as used. Only marked parameters will be sent to a GCS.
+ * A call to param_find() will mark a param as used as well.
+ *
+ * @param param		A handle returned by param_find or passed by param_foreach.
+ */
+__EXPORT void		param_set_used(param_t param);
+
+/**
  * Set the value of a parameter, but do not notify the system about the change.
  *
  * @param param		A handle returned by param_find or passed by param_foreach.
@@ -299,6 +307,7 @@ __EXPORT void		param_reset_excludes(const char *excludes[], int num_excludes);
 
 /**
  * Export changed parameters to a file.
+ * Note: this method requires a large amount of stack size!
  *
  * @param fd		File descriptor to export to.
  * @param only_unsaved	Only export changed parameters that have not yet been exported.
@@ -365,6 +374,7 @@ __EXPORT const char	*param_get_default_file(void);
 
 /**
  * Save parameters to the default file.
+ * Note: this method requires a large amount of stack size!
  *
  * This function saves all parameters with non-default values.
  *
@@ -485,6 +495,7 @@ static inline int param_get_cplusplus(param_t param, int32_t *val)
 #undef CHECK_PARAM_TYPE
 
 #define param_get(param, val) param_get_cplusplus(param, val)
+
 
 #endif /* __cplusplus */
 
